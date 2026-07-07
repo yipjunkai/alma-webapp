@@ -1,0 +1,38 @@
+{
+  "Metadata": {
+    "title": "Alma — Plantilla Next.js",
+    "description": "Una plantilla Next.js con Tailwind CSS, shadcn/ui y next-intl."
+  },
+  "HomePage": {
+    "badge": "Next.js 16 · App Router",
+    "title": "Bienvenido a Alma",
+    "subtitle": "Una plantilla moderna con Tailwind CSS, shadcn/ui y enrutamiento internacionalizado con next-intl.",
+    "primaryCta": "Comenzar",
+    "secondaryCta": "Documentación",
+    "stack": {
+      "title": "Qué incluye",
+      "nextjs": {
+        "title": "Next.js App Router",
+        "body": "React Server Components en un directorio src con segmentos de idioma."
+      },
+      "tailwind": {
+        "title": "Tailwind CSS v4",
+        "body": "Estilos utility-first con tokens de diseño y modo oscuro."
+      },
+      "shadcn": {
+        "title": "shadcn/ui",
+        "body": "Componentes accesibles y componibles que te pertenecen."
+      },
+      "intl": {
+        "title": "next-intl",
+        "body": "Mensajes con tipado seguro y enrutamiento por idioma."
+      }
+    },
+    "footer": "Idioma actual: {locale}"
+  },
+  "LocaleSwitcher": {
+    "label": "Idioma",
+    "en-US": "English",
+    "es-ES": "Español"
+  }
+}
