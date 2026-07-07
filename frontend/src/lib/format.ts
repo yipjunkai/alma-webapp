@@ -12,6 +12,10 @@ export function parseUtcDate(iso: string): Date {
  * `timeZone` is overridable for deterministic tests; defaults to server-local.
  */
 export function formatDateTime(iso: string, timeZone?: string): string {
+  const date = parseUtcDate(iso);
+  // `Intl.DateTimeFormat.format` throws on an invalid Date, so a malformed
+  // timestamp would crash rendering. Fall back to the raw value instead.
+  if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -19,5 +23,5 @@ export function formatDateTime(iso: string, timeZone?: string): string {
     hour: "numeric",
     minute: "2-digit",
     timeZone,
-  }).format(parseUtcDate(iso));
+  }).format(date);
 }

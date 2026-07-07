@@ -28,4 +28,8 @@ describe("formatDateTime", () => {
     );
     expect(formatted).toBe("Jul 7, 2026, 3:30 PM");
   });
+
+  it("falls back to the raw value for an unparseable timestamp", () => {
+    expect(formatDateTime("not-a-date", "UTC")).toBe("not-a-date");
+  });
 });
