@@ -166,6 +166,31 @@ def test_list_leads_state_filter(auth_client: TestClient) -> None:
     assert [item["id"] for item in reached["items"]] == [reached_id]
 
 
+def test_list_leads_pagination(auth_client: TestClient) -> None:
+    for i in range(5):
+        assert submit_lead(auth_client, email=f"page{i}@example.com").status_code == 201
+
+    first = auth_client.get("/api/leads", params={"limit": 2, "offset": 0}).json()
+    # total reflects the full match, not just the page.
+    assert first["total"] == 5
+    assert len(first["items"]) == 2
+
+    second = auth_client.get("/api/leads", params={"limit": 2, "offset": 2}).json()
+    assert second["total"] == 5
+    assert len(second["items"]) == 2
+    assert {i["id"] for i in first["items"]}.isdisjoint({i["id"] for i in second["items"]})
+
+    last = auth_client.get("/api/leads", params={"limit": 2, "offset": 4}).json()
+    assert last["total"] == 5
+    assert len(last["items"]) == 1
+
+
+def test_list_leads_rejects_bad_pagination(auth_client: TestClient) -> None:
+    assert auth_client.get("/api/leads", params={"limit": 0}).status_code == 422
+    assert auth_client.get("/api/leads", params={"limit": 101}).status_code == 422
+    assert auth_client.get("/api/leads", params={"offset": -1}).status_code == 422
+
+
 def test_patch_requires_auth(client: TestClient) -> None:
     lead_id = submit_lead(client).json()["id"]
     response = client.patch(f"/api/leads/{lead_id}", json={"state": "REACHED_OUT"})

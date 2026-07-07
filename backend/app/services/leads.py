@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Lead, LeadState
@@ -60,12 +60,24 @@ def find_recent_by_email(db: Session, email: str, window_seconds: int) -> Lead |
     return None
 
 
-def list_leads(db: Session, state: LeadState | None = None) -> tuple[list[Lead], int]:
-    query = select(Lead).order_by(Lead.created_at.desc(), Lead.id)
-    if state is not None:
-        query = query.where(Lead.state == state)
-    leads = list(db.scalars(query).all())
-    return leads, len(leads)
+def list_leads(
+    db: Session, state: LeadState | None = None, *, limit: int = 20, offset: int = 0
+) -> tuple[list[Lead], int]:
+    """Return one page of leads (newest first) plus the total matching count.
+
+    ``total`` reflects every lead matching the filter, not just this page, so
+    the caller can render pagination.
+    """
+    conditions = [Lead.state == state] if state is not None else []
+    total = int(db.scalar(select(func.count()).select_from(Lead).where(*conditions)) or 0)
+    query = (
+        select(Lead)
+        .where(*conditions)
+        .order_by(Lead.created_at.desc(), Lead.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.scalars(query).all()), total
 
 
 def get_lead(db: Session, lead_id: str) -> Lead:

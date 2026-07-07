@@ -7,6 +7,7 @@ import { Check, FileText, Inbox } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { MarkReachedOutButton } from "@/components/mark-reached-out-button";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -49,14 +50,17 @@ function StateBadge({ state }: { state: LeadState }) {
   );
 }
 
+const PAGE_SIZE = 20;
+
 export default async function AdminLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string }>;
+  searchParams: Promise<{ state?: string; page?: string }>;
 }) {
-  const { state } = await searchParams;
+  const { state, page: pageParam } = await searchParams;
   const stateFilter: LeadState | undefined =
     state === "PENDING" || state === "REACHED_OUT" ? state : undefined;
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const cookieStore = await cookies();
   const session = cookieStore.get(SESSION_COOKIE);
@@ -67,6 +71,8 @@ export default async function AdminLeadsPage({
   const response = await fetchLeads(
     `${SESSION_COOKIE}=${session.value}`,
     stateFilter,
+    PAGE_SIZE,
+    (page - 1) * PAGE_SIZE,
   );
   if (response.status === 401) {
     redirect("/login");
@@ -75,6 +81,15 @@ export default async function AdminLeadsPage({
     throw new Error(`Failed to load leads (${response.status})`);
   }
   const { items, total } = (await response.json()) as LeadListResponse;
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageHref = (p: number) => {
+    const params = new URLSearchParams();
+    if (stateFilter) params.set("state", stateFilter);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/admin/leads?${qs}` : "/admin/leads";
+  };
 
   const tabs = [
     { label: "All", href: "/admin/leads", active: !stateFilter },
@@ -212,6 +227,59 @@ export default async function AdminLeadsPage({
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <nav
+            aria-label="Pagination"
+            className="mt-4 flex items-center justify-between"
+          >
+            <p className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              {page > 1 ? (
+                <Link
+                  href={pageHref(page - 1)}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                  )}
+                >
+                  Previous
+                </Link>
+              ) : (
+                <span
+                  aria-disabled
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "pointer-events-none opacity-50",
+                  )}
+                >
+                  Previous
+                </span>
+              )}
+              {page < totalPages ? (
+                <Link
+                  href={pageHref(page + 1)}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                  )}
+                >
+                  Next
+                </Link>
+              ) : (
+                <span
+                  aria-disabled
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "pointer-events-none opacity-50",
+                  )}
+                >
+                  Next
+                </span>
+              )}
+            </div>
+          </nav>
+        )}
       </main>
     </div>
   );

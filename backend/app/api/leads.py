@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
@@ -81,8 +81,14 @@ def create_lead(
 
 
 @router.get("", response_model=LeadListOut)
-def list_leads(db: SessionDep, _user: CurrentUser, state: LeadState | None = None) -> LeadListOut:
-    leads, total = leads_service.list_leads(db, state=state)
+def list_leads(
+    db: SessionDep,
+    _user: CurrentUser,
+    state: LeadState | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> LeadListOut:
+    leads, total = leads_service.list_leads(db, state=state, limit=limit, offset=offset)
     return LeadListOut(items=[LeadOut.model_validate(lead) for lead in leads], total=total)
 
 

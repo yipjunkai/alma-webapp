@@ -176,13 +176,17 @@ export async function markReachedOut(
   }
 }
 
-/** Server-side: list leads, forwarding the caller's cookie header. */
+/** Server-side: list one page of leads, forwarding the caller's cookie header. */
 export function fetchLeads(
   cookieHeader: string,
   state?: LeadState,
+  limit?: number,
+  offset?: number,
 ): Promise<Response> {
   const url = new URL("/api/leads", BACKEND_URL);
   if (state) url.searchParams.set("state", state);
+  if (limit != null) url.searchParams.set("limit", String(limit));
+  if (offset != null) url.searchParams.set("offset", String(offset));
   return fetch(url, { headers: { cookie: cookieHeader }, cache: "no-store" });
 }
 
