@@ -48,6 +48,48 @@ class MaxBodySizeMiddleware:
         await self.app(scope, receive, send)
 
 
+_BASE_SECURITY_HEADERS: list[tuple[bytes, bytes]] = [
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"DENY"),
+    (b"referrer-policy", b"no-referrer"),
+    (b"strict-transport-security", b"max-age=63072000; includeSubDomains"),
+]
+# The API serves JSON and file downloads only, so lock CSP all the way down.
+# Scoped to /api so it doesn't break the Swagger UI served at /docs.
+_API_CSP: tuple[bytes, bytes] = (
+    b"content-security-policy",
+    b"default-src 'none'; frame-ancestors 'none'",
+)
+
+
+class SecurityHeadersMiddleware:
+    """Add security headers to every response (strict CSP on the API surface)."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        is_api = scope["path"].startswith("/api")
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = message.setdefault("headers", [])
+                present = {key.lower() for key, _ in headers}
+                additions = list(_BASE_SECURITY_HEADERS)
+                if is_api:
+                    additions.append(_API_CSP)
+                for key, value in additions:
+                    if key not in present:
+                        headers.append((key, value))
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 class RequestContextMiddleware:
     """Assign a request id, echo it in X-Request-ID, and log one line per request."""
 
@@ -103,6 +145,7 @@ def create_app() -> FastAPI:
     configure_logging(settings.log_level, settings.log_format)
     app = FastAPI(title="Alma Leads API", lifespan=lifespan)
     app.add_middleware(MaxBodySizeMiddleware, max_bytes=MAX_REQUEST_BYTES)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],

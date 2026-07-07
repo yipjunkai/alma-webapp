@@ -18,6 +18,18 @@ def test_incoming_request_id_is_echoed(client: TestClient) -> None:
     assert response.headers["x-request-id"] == "req-test-123"
 
 
+def test_security_headers_present(client: TestClient) -> None:
+    response = client.get("/api/health")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert "no-referrer" in response.headers["referrer-policy"]
+    assert "max-age" in response.headers["strict-transport-security"]
+    # The API surface gets a locked-down CSP.
+    assert (
+        response.headers["content-security-policy"] == "default-src 'none'; frame-ancestors 'none'"
+    )
+
+
 def test_request_id_filter_injects_context_id() -> None:
     token = request_id_ctx.set("ctx-1")
     try:
