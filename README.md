@@ -1,5 +1,7 @@
 # Alma — Lead Management
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/yipjunkai/alma-webapp/badge)](https://securityscorecards.dev/viewer/?uri=github.com/yipjunkai/alma-webapp)
+
 Prospects submit a public form (name, email, resume). The app stores the lead, emails both the
 prospect and an attorney, and gives attorneys an auth-guarded queue to work leads from `PENDING`
 to `REACHED_OUT`.
