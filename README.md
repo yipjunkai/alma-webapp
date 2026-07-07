@@ -32,6 +32,15 @@ Then:
 
 Optional: `just seed` inserts a handful of sample leads so the queue isn't empty.
 
+### With Docker
+
+Prefer containers? This runs the whole stack — frontend, API, and a persistent
+data volume — with one command (no local Node/Python/uv needed):
+
+```bash
+docker compose up --build   # → http://localhost:3000
+```
+
 ### Emails
 
 With no configuration, both emails (prospect confirmation + attorney notification) are printed to

@@ -1,0 +1,47 @@
+# Full-stack local run: `docker compose up --build` → http://localhost:3000
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: sqlite:////app/data/alma.db
+      UPLOAD_DIR: /app/data/uploads
+      FRONTEND_ORIGIN: http://localhost:3000
+      ATTORNEY_EMAIL: attorney@example.com
+      ADMIN_EMAIL: attorney@example.com
+      ADMIN_PASSWORD: changeme
+      # Leave empty to log emails to the container logs instead of sending.
+      RESEND_API_KEY: ""
+      # SECRET_KEY intentionally unset: the backend generates a strong ephemeral
+      # key per start (sessions reset on restart). Set a fixed >=32-char key to
+      # persist sessions in a real deployment.
+    volumes:
+      - backend-data:/app/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health').status==200 else 1)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    environment:
+      # Runtime value for Server Components; the /api rewrite is baked at build.
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend-data:
