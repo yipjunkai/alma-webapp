@@ -19,11 +19,20 @@ export const metadata: Metadata = {
 export default async function LoginPage() {
   const cookieStore = await cookies();
   const session = cookieStore.get(SESSION_COOKIE);
+
+  let authenticated = false;
   if (session) {
-    const response = await fetchMe(`${SESSION_COOKIE}=${session.value}`);
-    if (response.ok) {
-      redirect("/admin/leads");
+    try {
+      const response = await fetchMe(`${SESSION_COOKIE}=${session.value}`);
+      authenticated = response.ok;
+    } catch {
+      // Backend unreachable — treat as signed out and render the form rather
+      // than crashing to the framework error page.
     }
+  }
+  // `redirect()` throws internally, so it must run outside the try/catch above.
+  if (authenticated) {
+    redirect("/admin/leads");
   }
 
   return (

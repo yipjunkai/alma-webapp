@@ -1,10 +1,10 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  // `tsconfigPaths` resolves the `@/*` alias; `react` enables JSX/TSX.
-  plugins: [tsconfigPaths(), react()],
+  // `react` enables JSX/TSX; Vite resolves the `@/*` alias from tsconfig natively.
+  plugins: [react()],
+  resolve: { tsconfigPaths: true },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],

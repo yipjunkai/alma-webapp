@@ -132,19 +132,23 @@ export async function login(
   }
 }
 
-/** Log out; clears the session cookie. Errors are non-fatal. */
-export async function logout(): Promise<void> {
+/** Log out; the backend clears the session cookie. Returns whether it succeeded. */
+export async function logout(): Promise<{ ok: boolean }> {
   try {
-    await fetch("/api/auth/logout", { method: "POST" });
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    return { ok: response.ok };
   } catch {
-    // Best effort — the login redirect still happens.
+    return { ok: false };
   }
 }
+
+export type MarkReachedOutResult =
+  { ok: true } | { ok: false; error: string; authExpired?: boolean };
 
 /** Transition a lead to REACHED_OUT. */
 export async function markReachedOut(
   id: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<MarkReachedOutResult> {
   try {
     const response = await fetch(`/api/leads/${id}`, {
       method: "PATCH",
@@ -152,6 +156,14 @@ export async function markReachedOut(
       body: JSON.stringify({ state: "REACHED_OUT" }),
     });
     if (response.ok) return { ok: true };
+    if (response.status === 401) {
+      // Session expired (cookie TTL is 8h) — the caller should send them to login.
+      return {
+        ok: false,
+        authExpired: true,
+        error: "Your session expired — please sign in again.",
+      };
+    }
     if (response.status === 409) {
       return {
         ok: false,

@@ -21,8 +21,14 @@ export function MarkReachedOutButton({ leadId }: { leadId: string }) {
       router.refresh();
       return;
     }
+    if (result.authExpired) {
+      // Send the attorney to sign in again rather than looping on a dead session.
+      router.push("/login");
+      router.refresh();
+      return;
+    }
     setPending(false);
-    setError(result.error ?? "Could not update the lead. Please try again.");
+    setError(result.error);
   }
 
   return (

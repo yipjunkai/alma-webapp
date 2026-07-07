@@ -194,7 +194,7 @@ export default async function AdminLeadsPage({
                       <StateBadge state={lead.state} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDateTime(lead.created_at)}
+                      {formatDateTime(lead.created_at, "UTC")} UTC
                     </TableCell>
                     <TableCell className="text-right">
                       {lead.state === "PENDING" ? (
