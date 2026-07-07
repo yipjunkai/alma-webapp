@@ -10,6 +10,11 @@ to `REACHED_OUT`.
 - **API:** FastAPI (SQLAlchemy 2, Alembic, SQLite) — `backend/`
 - **Email:** Resend, with a console fallback that needs no account
 
+## Docs
+
+- [Design](docs/DESIGN.md) — architecture and the reasoning behind each decision
+- [Coding-agent usage](docs/AGENT_USAGE.md) — how this was built with agents, plus attribution
+
 ## Run locally
 
 Prerequisites: [Node 24+](https://nodejs.org), [pnpm](https://pnpm.io/installation),
