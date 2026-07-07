@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     log_level: str = "INFO"
     log_format: str = "console"  # "console" (readable) or "json" (structured)
+    # Repeat public submissions with the same email inside this window return the
+    # original lead instead of creating a duplicate (double-click / retry guard).
+    lead_dedupe_window_seconds: int = 60
 
     @field_validator("secret_key")
     @classmethod

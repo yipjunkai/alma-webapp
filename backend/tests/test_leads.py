@@ -101,6 +101,36 @@ def test_create_lead_strips_control_characters_from_names(client: TestClient) ->
     assert body["last_name"] == "Doe"
 
 
+def test_duplicate_submission_within_window_is_deduplicated(
+    auth_client: TestClient, email_service: CapturingEmailService
+) -> None:
+    first = submit_lead(auth_client, email="dupe@example.com")
+    second = submit_lead(auth_client, email="dupe@example.com")
+    assert first.status_code == 201
+    assert second.status_code == 201
+    # The original lead is returned, not a duplicate.
+    assert first.json()["id"] == second.json()["id"]
+
+    listing = auth_client.get("/api/leads").json()
+    assert listing["total"] == 1
+    # No second file stored and no duplicate emails.
+    assert len(list(get_settings().upload_dir.iterdir())) == 1
+    assert len(email_service.sent) == 2
+
+
+def test_find_recent_by_email_respects_window(client: TestClient) -> None:
+    from app.services import leads as leads_service
+
+    submit_lead(client, email="window@example.com")
+    session = get_sessionmaker()()
+    try:
+        assert leads_service.find_recent_by_email(session, "window@example.com", 0) is None
+        assert leads_service.find_recent_by_email(session, "window@example.com", 60) is not None
+        assert leads_service.find_recent_by_email(session, "nobody@example.com", 60) is None
+    finally:
+        session.close()
+
+
 def test_list_leads_requires_auth(client: TestClient) -> None:
     response = client.get("/api/leads")
     assert response.status_code == 401

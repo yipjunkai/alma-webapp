@@ -35,6 +35,14 @@ def create_lead(
         errors = [{**error, "loc": ("body", *error["loc"])} for error in exc.errors()]
         raise RequestValidationError(errors) from exc
 
+    # Idempotency: a rapid duplicate (double-click / retry) with the same email
+    # returns the original lead — no second file stored, no duplicate emails.
+    existing = leads_service.find_recent_by_email(
+        db, data.email, settings.lead_dedupe_window_seconds
+    )
+    if existing is not None:
+        return existing
+
     # Surface resume validation as a field-scoped 422, matching the pydantic shape
     # above so every 422 from this endpoint has one contract the client can map.
     try:
