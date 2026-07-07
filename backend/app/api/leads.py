@@ -34,16 +34,34 @@ def create_lead(
     except ValidationError as exc:
         errors = [{**error, "loc": ("body", *error["loc"])} for error in exc.errors()]
         raise RequestValidationError(errors) from exc
-    stored_name, original_name = storage.save_resume(resume, settings.upload_dir)
-    lead = leads_service.create_lead(
-        db,
-        first_name=data.first_name,
-        last_name=data.last_name,
-        email=data.email,
-        resume_stored_name=stored_name,
-        resume_original_name=original_name,
+
+    # Surface resume validation as a field-scoped 422, matching the pydantic shape
+    # above so every 422 from this endpoint has one contract the client can map.
+    try:
+        stored_name, original_name = storage.save_resume(resume, settings.upload_dir)
+    except storage.ResumeValidationError as exc:
+        raise RequestValidationError(
+            [{"type": "value_error", "loc": ("body", "resume"), "msg": exc.message, "input": None}]
+        ) from exc
+
+    try:
+        lead = leads_service.create_lead(
+            db,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email,
+            resume_stored_name=stored_name,
+            resume_original_name=original_name,
+        )
+    except Exception:
+        # Don't leave the just-written upload orphaned if persistence fails.
+        storage.delete_resume(stored_name, settings.upload_dir)
+        raise
+
+    admin_leads_url = f"{settings.frontend_origin}/admin/leads"
+    messages = compose_lead_emails(
+        lead, attorney_email=settings.attorney_email, admin_leads_url=admin_leads_url
     )
-    messages = compose_lead_emails(lead, attorney_email=settings.attorney_email)
     background_tasks.add_task(send_email_messages, email_service, messages)
     return lead
 

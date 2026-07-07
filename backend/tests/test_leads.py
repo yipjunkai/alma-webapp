@@ -70,14 +70,35 @@ def test_create_lead_missing_fields(client: TestClient) -> None:
 def test_create_lead_disallowed_extension(client: TestClient) -> None:
     response = submit_lead(client, filename="malware.exe", content=b"MZ")
     assert response.status_code == 422
-    assert ".pdf" in response.json()["detail"]
+    detail = response.json()["detail"]
+    # File errors share the field-scoped 422 shape used for the text fields.
+    assert any(part["loc"][-1] == "resume" for part in detail)
+    assert any(".pdf" in part["msg"] for part in detail)
 
 
 def test_create_lead_file_too_large(client: TestClient) -> None:
     oversized = b"x" * (5 * 1024 * 1024 + 1)
     response = submit_lead(client, content=oversized)
     assert response.status_code == 422
-    assert "5 MB" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert any(part["loc"][-1] == "resume" for part in detail)
+    assert any("5 MB" in part["msg"] for part in detail)
+
+
+def test_create_lead_empty_file(client: TestClient) -> None:
+    response = submit_lead(client, content=b"")
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert any(part["loc"][-1] == "resume" for part in detail)
+    assert any("empty" in part["msg"].lower() for part in detail)
+
+
+def test_create_lead_strips_control_characters_from_names(client: TestClient) -> None:
+    response = submit_lead(client, first_name="Ev\r\nil", last_name="Do\te")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["first_name"] == "Evil"
+    assert body["last_name"] == "Doe"
 
 
 def test_list_leads_requires_auth(client: TestClient) -> None:

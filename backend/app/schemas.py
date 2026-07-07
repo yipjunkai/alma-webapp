@@ -1,10 +1,15 @@
 """Pydantic request/response schemas — the public API contract."""
 
+import re
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_serializer, field_validator
 
 from app.models import LeadState
+
+# C0/C7 control characters (incl. CR/LF/TAB) — stripped from names so they can't
+# forge multi-line email subjects or inject into log lines.
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class HealthOut(BaseModel):
@@ -29,8 +34,10 @@ class LeadCreate(BaseModel):
 
     @field_validator("first_name", "last_name", mode="before")
     @classmethod
-    def _strip_whitespace(cls, value: object) -> object:
-        return value.strip() if isinstance(value, str) else value
+    def _clean_name(cls, value: object) -> object:
+        # Strip control characters, then trim; a name that was only control
+        # chars/whitespace collapses to "" and fails the min_length check.
+        return _CONTROL_CHARS.sub("", value).strip() if isinstance(value, str) else value
 
 
 class LeadOut(BaseModel):

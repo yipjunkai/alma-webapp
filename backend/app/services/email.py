@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC
 from typing import Annotated, Protocol
 
 import resend
@@ -12,8 +13,6 @@ from app.core.config import Settings, get_settings
 from app.models import Lead
 
 logger = logging.getLogger(__name__)
-
-ADMIN_LEADS_URL = "http://localhost:3000/admin/leads"
 
 
 @dataclass(frozen=True)
@@ -72,8 +71,15 @@ def get_email_service(settings: Annotated[Settings, Depends(get_settings)]) -> E
 EmailServiceDep = Annotated[EmailService, Depends(get_email_service)]
 
 
-def compose_lead_emails(lead: Lead, attorney_email: str) -> tuple[EmailMessage, EmailMessage]:
+def compose_lead_emails(
+    lead: Lead, attorney_email: str, admin_leads_url: str
+) -> tuple[EmailMessage, EmailMessage]:
     """Build the prospect confirmation and the attorney notification for a new lead."""
+    # SQLite returns naive datetimes; stored timestamps are UTC — label them so.
+    created = lead.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
+    submitted = created.astimezone(UTC).strftime("%b %d, %Y %H:%M UTC")
     prospect = EmailMessage(
         to=lead.email,
         subject="We received your information - Alma",
@@ -94,8 +100,8 @@ def compose_lead_emails(lead: Lead, attorney_email: str) -> tuple[EmailMessage, 
             f"Email: {lead.email}\n"
             f"Resume: {lead.resume_original_name}\n"
             f"State: {lead.state.value}\n"
-            f"Submitted: {lead.created_at.isoformat()}\n\n"
-            f"Review leads: {ADMIN_LEADS_URL}"
+            f"Submitted: {submitted}\n\n"
+            f"Review leads: {admin_leads_url}"
         ),
     )
     return prospect, attorney

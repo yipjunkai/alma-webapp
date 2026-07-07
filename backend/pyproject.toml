@@ -36,3 +36,7 @@ select = ["E", "F", "I", "UP", "B"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+filterwarnings = [
+    # Upstream: FastAPI's TestClient still imports httpx via starlette.testclient.
+    "ignore:Using .httpx. with .starlette.testclient. is deprecated",
+]
