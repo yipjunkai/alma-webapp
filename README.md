@@ -65,13 +65,3 @@ just e2e   # installs the browser, boots an isolated backend + prod build, runs 
 
 CI runs the same gates on every push to `main` and every pull request
 (`.github/workflows/ci.yml`).
-
-## Repo map
-
-```
-frontend/     Next.js app — public form, login, /admin/leads queue
-backend/      FastAPI app — leads API, auth, email, storage, migrations
-docs/         DESIGN.md (architecture & trade-offs), AGENT_USAGE.md
-.env.example  backend config template (copied to backend/.env by `just setup`)
-justfile      setup / install / frontend / backend / seed / verify / e2e
-```
