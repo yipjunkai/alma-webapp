@@ -1,5 +1,10 @@
+from datetime import timedelta
+
 from conftest import ADMIN_EMAIL, ADMIN_PASSWORD
 from fastapi.testclient import TestClient
+
+from app.core.config import get_settings
+from app.core.security import create_access_token
 
 
 def test_login_success_sets_httponly_cookie(client: TestClient) -> None:
@@ -44,6 +49,14 @@ def test_me_with_session_cookie(auth_client: TestClient) -> None:
 
 def test_garbage_cookie_rejected(client: TestClient) -> None:
     client.cookies.set("alma_session", "not-a-valid-jwt")
+    response = client.get("/api/auth/me")
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Not authenticated"}
+
+
+def test_expired_session_cookie_rejected(client: TestClient) -> None:
+    expired = create_access_token(ADMIN_EMAIL, get_settings().secret_key, ttl=timedelta(seconds=-1))
+    client.cookies.set("alma_session", expired)
     response = client.get("/api/auth/me")
     assert response.status_code == 401
     assert response.json() == {"detail": "Not authenticated"}

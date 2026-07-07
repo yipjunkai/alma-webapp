@@ -203,3 +203,19 @@ def test_resume_download_streams_original_filename(auth_client: TestClient) -> N
 def test_resume_unknown_lead_returns_404(auth_client: TestClient) -> None:
     response = auth_client.get(f"/api/leads/{uuid.uuid4()}/resume")
     assert response.status_code == 404
+
+
+def test_resume_missing_file_returns_404(auth_client: TestClient) -> None:
+    # The row exists but the stored file was lost — download must 404, not 500.
+    lead_id = submit_lead(auth_client).json()["id"]
+    for stored in get_settings().upload_dir.iterdir():
+        stored.unlink()
+    response = auth_client.get(f"/api/leads/{lead_id}/resume")
+    assert response.status_code == 404
+
+
+def test_request_over_hard_body_limit_returns_413(client: TestClient) -> None:
+    # The coarse body-size guard rejects >10 MB before the multipart parse.
+    huge = b"x" * (10 * 1024 * 1024 + 1)
+    response = submit_lead(client, content=huge)
+    assert response.status_code == 413
