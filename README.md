@@ -7,7 +7,6 @@ to `REACHED_OUT`.
 - **Frontend:** Next.js 16 (App Router, React 19, Tailwind v4, shadcn/ui) — `frontend/`
 - **API:** FastAPI (SQLAlchemy 2, Alembic, SQLite) — `backend/`
 - **Email:** Resend, with a console fallback that needs no account
-- **Docs:** [design decisions](docs/DESIGN.md) · [coding-agent usage](docs/AGENT_USAGE.md)
 
 ## Run locally
 

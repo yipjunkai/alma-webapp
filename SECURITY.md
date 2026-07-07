@@ -12,9 +12,9 @@ or proof of concept. Reports are typically acknowledged within a few business da
 
 ## Scope
 
-This is a demonstration application. The security posture — what is validated and
-enforced, plus deliberate scope cuts (rate limiting, CAPTCHA, virus scanning, TLS,
-audit logging) — is documented in [docs/DESIGN.md](docs/DESIGN.md#security-posture-and-known-cuts).
+This is a demonstration application. It validates and enforces public inputs at the
+API, but deliberately defers some production hardening — rate limiting, CAPTCHA,
+virus scanning of uploads, TLS-only cookies, and audit logging.
 
 ## Supported versions
 
