@@ -32,10 +32,10 @@ backend:
 seed:
     cd backend && uv run python -m app.seed
 
-# Full gate: frontend typecheck/lint/format/unit + backend ruff/pytest
+# Full gate: frontend typecheck/lint/format/unit + backend ruff/pyright/pytest
 verify:
     cd frontend && pnpm verify
-    cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest
+    cd backend && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest
 
 # End-to-end tests (boots an isolated backend + production build)
 e2e:

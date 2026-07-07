@@ -57,6 +57,8 @@ jobs:
         run: uv run ruff check .
       - name: Ruff format check
         run: uv run ruff format --check .
+      - name: Type check (pyright)
+        run: uv run pyright
       - name: Pytest
         run: uv run pytest
 

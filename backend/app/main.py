@@ -1,7 +1,7 @@
 """FastAPI application factory."""
 
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
@@ -44,7 +44,7 @@ class MaxBodySizeMiddleware:
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     settings = get_settings()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     ensure_sqlite_dir(settings.database_url)

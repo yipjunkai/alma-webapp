@@ -20,6 +20,7 @@ dev = [
     "pytest>=8.0.0",
     "httpx>=0.27.0",
     "ruff>=0.6.0",
+    "pyright>=1.1.411",
 ]
 
 [tool.uv]
@@ -31,6 +32,24 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.pyright]
+include = ["app", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+
+# Tests use loosely-typed helpers (FastAPI TestClient / httpx), so relax the
+# "unknown type" reports there while keeping app/ strict.
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+extraPaths = ["."]
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+reportMissingParameterType = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

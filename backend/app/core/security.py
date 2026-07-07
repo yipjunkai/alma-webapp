@@ -13,13 +13,14 @@ SESSION_TTL = timedelta(hours=8)
 def create_access_token(subject: str, secret_key: str, ttl: timedelta = SESSION_TTL) -> str:
     now = datetime.now(UTC)
     payload = {"sub": subject, "iat": now, "exp": now + ttl}
-    return jwt.encode(payload, secret_key, algorithm=JWT_ALGORITHM)
+    # PyJWT's key param union includes an untyped cryptography type; our usage is str.
+    return jwt.encode(payload, secret_key, algorithm=JWT_ALGORITHM)  # pyright: ignore[reportUnknownMemberType]
 
 
 def decode_access_token(token: str, secret_key: str) -> str | None:
     """Return the token subject, or None if the token is invalid or expired."""
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[JWT_ALGORITHM])  # pyright: ignore[reportUnknownMemberType]
     except jwt.PyJWTError:
         return None
     subject = payload.get("sub")
