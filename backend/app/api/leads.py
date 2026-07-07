@@ -1,0 +1,80 @@
+"""Lead endpoints: public intake plus attorney-only management."""
+
+from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse
+from pydantic import ValidationError
+
+from app.api.deps import CurrentUser, SessionDep, SettingsDep
+from app.models import Lead, LeadState
+from app.schemas import LeadCreate, LeadListOut, LeadOut, LeadStateUpdate
+from app.services import leads as leads_service
+from app.services import storage
+from app.services.email import EmailServiceDep, compose_lead_emails, send_email_messages
+from app.services.leads import InvalidTransitionError, LeadNotFoundError
+
+router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+@router.post("", response_model=LeadOut, status_code=201)
+def create_lead(
+    first_name: Annotated[str, Form()],
+    last_name: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    resume: Annotated[UploadFile, File()],
+    background_tasks: BackgroundTasks,
+    db: SessionDep,
+    settings: SettingsDep,
+    email_service: EmailServiceDep,
+) -> Lead:
+    try:
+        data = LeadCreate(first_name=first_name, last_name=last_name, email=email)
+    except ValidationError as exc:
+        errors = [{**error, "loc": ("body", *error["loc"])} for error in exc.errors()]
+        raise RequestValidationError(errors) from exc
+    stored_name, original_name = storage.save_resume(resume, settings.upload_dir)
+    lead = leads_service.create_lead(
+        db,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        email=data.email,
+        resume_stored_name=stored_name,
+        resume_original_name=original_name,
+    )
+    messages = compose_lead_emails(lead, attorney_email=settings.attorney_email)
+    background_tasks.add_task(send_email_messages, email_service, messages)
+    return lead
+
+
+@router.get("", response_model=LeadListOut)
+def list_leads(db: SessionDep, _user: CurrentUser, state: LeadState | None = None) -> LeadListOut:
+    leads, total = leads_service.list_leads(db, state=state)
+    return LeadListOut(items=[LeadOut.model_validate(lead) for lead in leads], total=total)
+
+
+@router.patch("/{lead_id}", response_model=LeadOut)
+def update_lead_state(
+    lead_id: str, payload: LeadStateUpdate, db: SessionDep, _user: CurrentUser
+) -> Lead:
+    try:
+        return leads_service.transition_lead(db, lead_id, payload.state)
+    except LeadNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Lead not found") from exc
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/{lead_id}/resume")
+def download_resume(
+    lead_id: str, db: SessionDep, settings: SettingsDep, _user: CurrentUser
+) -> FileResponse:
+    try:
+        lead = leads_service.get_lead(db, lead_id)
+    except LeadNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Lead not found") from exc
+    file_path = settings.upload_dir / lead.resume_stored_name
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Resume file not found")
+    return FileResponse(file_path, filename=lead.resume_original_name)
