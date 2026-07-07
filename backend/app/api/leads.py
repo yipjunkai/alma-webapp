@@ -37,6 +37,12 @@ def create_lead(
 
     # Idempotency: a rapid duplicate (double-click / retry) with the same email
     # returns the original lead — no second file stored, no duplicate emails.
+    #
+    # Known trade-offs (acceptable at intake volume): this is check-then-create,
+    # not atomic, with no unique constraint behind it — two truly concurrent
+    # identical submits could both pass (SQLite's single writer makes that
+    # unlikely). And a deliberate re-submit within the window (e.g. correcting a
+    # wrong resume) returns the original lead and silently drops the new file.
     existing = leads_service.find_recent_by_email(
         db, data.email, settings.lead_dedupe_window_seconds
     )
