@@ -12,14 +12,14 @@ to `REACHED_OUT`.
 ## Run locally
 
 Prerequisites: [Node 24+](https://nodejs.org), [pnpm](https://pnpm.io/installation),
-[uv](https://docs.astral.sh/uv/getting-started/installation/) (manages Python 3.12 automatically).
+[uv](https://docs.astral.sh/uv/getting-started/installation/) (manages Python 3.12 automatically),
+and [just](https://just.systems/man/en/packages.html) (task runner).
 
 ```bash
-make install                          # pnpm install (frontend) + uv sync (backend)
-cp backend/.env.example backend/.env  # defaults work out of the box
+just install    # installs deps and creates backend/.env from .env.example (defaults work as-is)
 
-make backend                          # terminal 1 — API on http://127.0.0.1:8000
-make frontend                         # terminal 2 — web app on http://localhost:3000
+just backend    # terminal 1 — API on http://127.0.0.1:8000
+just frontend   # terminal 2 — web app on http://localhost:3000
 ```
 
 Then:
@@ -30,7 +30,7 @@ Then:
 | http://localhost:3000/admin/leads | Attorney lead queue | `attorney@example.com` / `changeme` (from `backend/.env`) |
 | http://127.0.0.1:8000/docs | API reference (OpenAPI) | — |
 
-Optional: `make seed` inserts a handful of sample leads so the queue isn't empty.
+Optional: `just seed` inserts a handful of sample leads so the queue isn't empty.
 
 ### Emails
 
@@ -44,16 +44,14 @@ address, so use your own email (or `+alias`es) when demoing.
 ## Tests
 
 ```bash
-make verify              # frontend typecheck/lint/format/unit + backend ruff/pytest
+just verify   # frontend typecheck/lint/format/unit + backend ruff/pytest
 ```
 
 End-to-end (Playwright drives the real UI against a production build and an isolated backend):
 
 ```bash
-cd frontend
-pnpm exec playwright install chromium   # one-time browser download
-pnpm test:e2e                           # ports 3000 and 8000 must be free —
-                                        # stop `make frontend` / `make backend` first
+just e2e   # installs the browser, boots an isolated backend + prod build, runs the suite
+           # ports 3000 and 8000 must be free — stop `just frontend` / `just backend` first
 ```
 
 CI runs the same gates on every push to `main` and every pull request
@@ -62,8 +60,9 @@ CI runs the same gates on every push to `main` and every pull request
 ## Repo map
 
 ```
-frontend/   Next.js app — public form, login, /admin/leads queue
-backend/    FastAPI app — leads API, auth, email, storage, migrations
-docs/       DESIGN.md (architecture & trade-offs), AGENT_USAGE.md
-Makefile    install / frontend / backend / seed / verify
+frontend/     Next.js app — public form, login, /admin/leads queue
+backend/      FastAPI app — leads API, auth, email, storage, migrations
+docs/         DESIGN.md (architecture & trade-offs), AGENT_USAGE.md
+.env.example  backend config template (copied to backend/.env by `just setup`)
+justfile      setup / install / frontend / backend / seed / verify / e2e
 ```
