@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     upload_dir: Path = Path("./data/uploads")
     frontend_origin: str = "http://localhost:3000"
+    log_level: str = "INFO"
+    log_format: str = "console"  # "console" (readable) or "json" (structured)
 
     @field_validator("secret_key")
     @classmethod

@@ -6,6 +6,7 @@ services:
       DATABASE_URL: sqlite:////app/data/alma.db
       UPLOAD_DIR: /app/data/uploads
       FRONTEND_ORIGIN: http://localhost:3000
+      LOG_FORMAT: json
       ATTORNEY_EMAIL: attorney@example.com
       ADMIN_EMAIL: attorney@example.com
       ADMIN_PASSWORD: changeme
