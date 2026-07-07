@@ -45,10 +45,19 @@ address, so use your own email (or `+alias`es) when demoing.
 
 ```bash
 make verify              # frontend typecheck/lint/format/unit + backend ruff/pytest
-cd frontend && pnpm test:e2e   # Playwright end-to-end (boots API + prod build)
 ```
 
-CI runs the same gates on every push (`.github/workflows/ci.yml`).
+End-to-end (Playwright drives the real UI against a production build and an isolated backend):
+
+```bash
+cd frontend
+pnpm exec playwright install chromium   # one-time browser download
+pnpm test:e2e                           # ports 3000 and 8000 must be free —
+                                        # stop `make frontend` / `make backend` first
+```
+
+CI runs the same gates on every push to `main` and every pull request
+(`.github/workflows/ci.yml`).
 
 ## Repo map
 
